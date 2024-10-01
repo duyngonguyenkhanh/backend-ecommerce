@@ -98,7 +98,7 @@ app.use((req, res, next) => {
 
 // Tạo route cơ bản
 app.get("/", (req, res) => {
-  res.send("Chào mừng bạn đến với Backend Node.js!!!");
+  res.send("Chào mừng bạn đến với Backend Node.js!");
 });
 
 app.use("/product", shopRouter);
