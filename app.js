@@ -1,4 +1,6 @@
 const express = require("express");
+const http = require("http"); // Import http
+const socketIo = require("socket.io"); // Import socket.io
 require('dotenv').config();
 const path = require("path");
 const mongoose = require("mongoose");
@@ -7,6 +9,8 @@ const multer = require("multer");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session); // Gắn session với MongoDB
 const app = express();
+const server = http.createServer(app); // Tạo server http
+const io = socketIo(server); // Khởi tạo socket.io
 const PORT = process.env.PORT;
 
 //import các model
@@ -104,6 +108,20 @@ app.get("/", (req, res) => {
 app.use("/product", shopRouter);
 app.use("/auth", userRouter);
 app.use("/admin", adminRouter);
+
+io.on("connection", (socket) => {
+  console.log("Người dùng đã kết nối:", socket.id);
+
+  // Lắng nghe sự kiện gửi tin nhắn
+  socket.on("sendMessage", (data) => {
+      io.emit("receiveMessage", data); // Phát lại tin nhắn cho tất cả người dùng
+  });
+
+  socket.on("disconnect", () => {
+      console.log("Người dùng đã ngắt kết nối:", socket.id);
+  });
+});
+
 
 //kết nối với mongodb
 mongoose

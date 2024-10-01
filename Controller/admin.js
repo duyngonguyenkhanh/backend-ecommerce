@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const User = require("../Model/user");
+const Order = require("../Model/order")
 
 // Secret key để mã hóa JWT
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -92,6 +93,21 @@ exports.postLoginAdmin = [
     }
   },
 ];
+
+//hàm lấy tất cả order
+exports.getAllOrder = async(req, res) => {
+  try {
+     const order = await Order.find()
+     return res.status(200).json({
+      message: "lấy dữ liệu thành công",
+      order: order,
+     })
+  } catch (error) {
+    return res.status(500).json({ message: "Lấy danh sách đơn hàng thất bại", error: error.message });
+  }
+}
+
+
 //Hàm logout 
 exports.postLogout = (req, res, next) => {
   if (req.session) {
