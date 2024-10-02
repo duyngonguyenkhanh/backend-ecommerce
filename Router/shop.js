@@ -2,7 +2,6 @@ const express = require('express');
 const isAuth = require('../middleware/is-auth')
 const shopController = require('../Controller/shop')
 const router = express.Router();
-const nodemailer = require("nodemailer");
 
 router.post('/allproduct', shopController.postAllProduct)
 router.get('/allproduct', shopController.getAllProducts)

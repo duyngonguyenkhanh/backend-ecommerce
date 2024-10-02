@@ -66,6 +66,9 @@ app.use(
   })
 );
 
+app.set("trust proxy", 1); // Bật trust proxy để cookie hoạt động trên Render
+
+
 //Cấu hình session
 app.use(
   session({
@@ -74,9 +77,10 @@ app.use(
     saveUninitialized: false, // Không lưu session khi không có thay đổi
     store: store, // Nơi lưu session (ở đây là MongoDB)
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24, // Thời gian hết hạn của session (1 ngày)
+      maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // Thời gian hết hạn của session (1 ngày)
       httpOnly: true, // Chỉ gửi cookie qua HTTP(S), không truy cập từ JavaScript
-      secure: false, // Đặt thành true nếu dùng HTTPS
+      secure: process.env.NODE_ENV === 'production', // Chỉ bật secure trên môi trường production
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // 'none' trên production, 'lax' trên local
     },
   })
 );
