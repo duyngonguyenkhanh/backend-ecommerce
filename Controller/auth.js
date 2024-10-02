@@ -44,7 +44,6 @@ exports.postLogin = [
     const password = req.body.password;
 
     if (!email || !password) {
-      console.log("mật khẩu không hợp lệ");
     }
     try {
       const user = await User.findOne({ email: email });
@@ -54,9 +53,7 @@ exports.postLogin = [
           .status(500)
           .json({ message: "Sai tài khoản hoặc sai mật khẩu" });
       } else {
-        const doMatch = await bcrypt.compare(password, user.password);
-        console.log(doMatch);
-        
+        const doMatch = await bcrypt.compare(password, user.password);        
         if (doMatch) {
           req.session.isLoggedIn = true;
           req.session.user = user;
@@ -69,9 +66,7 @@ exports.postLogin = [
             },
             JWT_SECRET,
             { expiresIn: "1h" } // Token hết hạn sau 1 giờ
-          );
-          console.log(token);
-          
+          );          
           return res.status(200).json({
             message: "Đăng nhập thành công",
             token: token,

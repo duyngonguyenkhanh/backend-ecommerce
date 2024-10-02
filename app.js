@@ -1,7 +1,7 @@
 const express = require("express");
 const http = require("http"); // Import http
 const socketIo = require("socket.io"); // Import socket.io
-require('dotenv').config();
+require("dotenv").config();
 const path = require("path");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -20,6 +20,7 @@ const User = require("./Model/user");
 const shopRouter = require("./Router/shop");
 const userRouter = require("./Router/user");
 const adminRouter = require("./Router/admin");
+const chatRouter = require("./Router/chat");
 
 const MONGODB_URI =
   "mongodb+srv://duyngonguyenkhanh:reyt3clSrRT1l5iI@cluster0.mqoq6.mongodb.net/ecommerce-app";
@@ -108,21 +109,32 @@ app.get("/", (req, res) => {
 app.use("/product", shopRouter);
 app.use("/auth", userRouter);
 app.use("/admin", adminRouter);
+app.use("/chat", chatRouter);
 
 io.on("connection", (socket) => {
-  console.log("Người dùng đã kết nối:", socket.id);
+  console.log("Người dùng kết nối:", socket.id);
 
-  // Lắng nghe sự kiện gửi tin nhắn
-  socket.on("sendMessage", (data) => {
-      io.emit("receiveMessage", data); // Phát lại tin nhắn cho tất cả người dùng
+  // Lắng nghe sự kiện "message" từ client
+  socket.on("message", async (data) => {
+    const { roomId, message, userId } = data;
+
+    // Lưu tin nhắn vào database (cập nhật room)
+    await ChatRoom.findByIdAndUpdate(roomId, {
+      $push: { messages: { userId, message } },
+    });
+
+    // Phát sự kiện đến các người dùng khác trong room
+    socket.to(roomId).emit("message", { message, userId });
+  });
+
+  socket.on("joinRoom", (roomId) => {
+    socket.join(roomId);
   });
 
   socket.on("disconnect", () => {
-      console.log("Người dùng đã ngắt kết nối:", socket.id);
+    console.log("Người dùng đã ngắt kết nối:", socket.id);
   });
 });
-
-
 //kết nối với mongodb
 mongoose
   .connect(MONGODB_URI)

@@ -40,7 +40,6 @@ exports.getAllProducts = async (req, res, next) => {
     const products = await Product.find(); // Truy vấn tất cả sản phẩm
     res.status(200).json(products); // Trả về danh sách sản phẩm dưới dạng JSON
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error: "Failed to fetch products" });
   }
 };
