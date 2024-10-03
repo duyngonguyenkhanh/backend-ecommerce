@@ -8,9 +8,19 @@ const cors = require("cors");
 const multer = require("multer");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session); // Gắn session với MongoDB
+
 const app = express();
+
 const server = http.createServer(app); // Tạo server http
-const io = socketIo(server); // Khởi tạo socket.io
+
+const io = require("socket.io")(server, {
+  cors: {
+    origin: true, // Địa chỉ của frontend React
+    methods: ["GET", "POST"],
+    credentials: true, // Cho phép gửi cookie hoặc xác thực
+  },
+}); // Khởi tạo socket.io
+
 const PORT = process.env.PORT;
 
 //import các model
@@ -21,6 +31,11 @@ const shopRouter = require("./Router/shop");
 const userRouter = require("./Router/user");
 const adminRouter = require("./Router/admin");
 const chatRouter = require("./Router/chat");
+
+//import modelchat
+const ChatRoom = require('./Model/chatRoom')
+const UserModal = require('./Model/user')
+const chatController = require('./Controller/chat')
 
 const MONGODB_URI =
   "mongodb+srv://duyngonguyenkhanh:reyt3clSrRT1l5iI@cluster0.mqoq6.mongodb.net/ecommerce-app";
@@ -58,6 +73,12 @@ app.use(
 );
 app.use("/images", express.static(path.join(__dirname, "images")));
 
+// Middleware để sử dụng socket.io trong req
+app.use((req, res, next) => {
+  req.io = io; // Gán io vào req
+  next();
+});
+
 // Cấu hình CORS để chỉ định rõ ràng miền của Frontend và cho phép gửi cookie
 app.use(
   cors({
@@ -67,7 +88,6 @@ app.use(
 );
 
 app.set("trust proxy", 1); // Bật trust proxy để cookie hoạt động trên Render
-
 
 //Cấu hình session
 app.use(
@@ -79,8 +99,8 @@ app.use(
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // Thời gian hết hạn của session (1 ngày)
       httpOnly: true, // Chỉ gửi cookie qua HTTP(S), không truy cập từ JavaScript
-      secure: process.env.NODE_ENV === 'production', // Chỉ bật secure trên môi trường production
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // 'none' trên production, 'lax' trên local
+      secure: process.env.NODE_ENV === "production", // Chỉ bật secure trên môi trường production
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 'none' trên production, 'lax' trên local
     },
   })
 );
@@ -115,35 +135,51 @@ app.use("/auth", userRouter);
 app.use("/admin", adminRouter);
 app.use("/chat", chatRouter);
 
-io.on("connection", (socket) => {
-  console.log("Người dùng kết nối:", socket.id);
+// Socket.IO logic cho tính năng chat live
+// Danh sách phòng chat
+let rooms = {}; // Lưu thông tin các phòng
 
-  // Lắng nghe sự kiện "message" từ client
-  socket.on("message", async (data) => {
-    const { roomId, message, userId } = data;
+// Xử lý kết nối của client
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
 
-    // Lưu tin nhắn vào database (cập nhật room)
-    await ChatRoom.findByIdAndUpdate(roomId, {
-      $push: { messages: { userId, message } },
-    });
-
-    // Phát sự kiện đến các người dùng khác trong room
-    socket.to(roomId).emit("message", { message, userId });
-  });
-
-  socket.on("joinRoom", (roomId) => {
+  // Client tham gia một phòng dựa trên userId (ví dụ userId được truyền khi kết nối)
+  socket.on('joinRoom', ({ roomId, userId }) => {
     socket.join(roomId);
+    console.log(`${userId} joined room ${roomId}`);
+    
+    // Cập nhật danh sách các phòng với thông tin client
+    rooms[roomId] = { roomId, userId };
+    
+    // Phát lại danh sách phòng cho tất cả admin
+    io.emit('rooms', Object.keys(rooms)); // Phát danh sách phòng cho admin
   });
 
-  socket.on("disconnect", () => {
-    console.log("Người dùng đã ngắt kết nối:", socket.id);
+  // Lắng nghe và phát tin nhắn tới phòng
+  socket.on('message', ({ roomId, message, userId }) => {
+    io.to(roomId).emit('message', { userId, message });
+  });
+
+  // Xử lý ngắt kết nối
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+    // Loại bỏ phòng khi client thoát (có thể thêm logic tùy chỉnh)
+    for (const room in rooms) {
+      if (rooms[room].userId === socket.id) {
+        delete rooms[room];
+      }
+    }
+    io.emit('rooms', Object.keys(rooms)); // Phát lại danh sách phòng sau khi client thoát
   });
 });
-//kết nối với mongodb
+
+// Kết nối với MongoDB
 mongoose
   .connect(MONGODB_URI)
-  .then((result) => {
-    app.listen(PORT);
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`Server đang chạy trên cổng ${PORT}`);
+    });
   })
   .catch((err) => {
     console.error(err);

@@ -1,27 +1,23 @@
-// routes/chat.js
 const express = require("express");
+const chatController = require("../Controller/chat"); // Import controller
 const router = express.Router();
-const ChatRoom = require("../Model/chatRoom"); // Mô hình ChatRoom
 
-// Tạo một room chat mới
-router.post("/rooms", async (req, res) => {
-  const { userId } = req.body; // ID của người dùng
-  try {
-    const newRoom = await ChatRoom.create({ userId, messages: [] });
-    res.status(201).json(newRoom);
-  } catch (error) {
-    res.status(500).json({ message: "Tạo room không thành công", error });
-  }
-});
+// API để tạo phòng chat giữa admin và client
+router.post("/createRoom", chatController.createRoom);
 
-// Lấy danh sách các room chat
-router.get("/rooms", async (req, res) => {
-  try {
-    const rooms = await ChatRoom.find();
-    res.status(200).json(rooms);
-  } catch (error) {
-    res.status(500).json({ message: "Lấy danh sách room không thành công", error });
-  }
-});
+// API để tạo phòng chat giữa admin và client
+router.post("/getrooms", chatController.getAllRooms);
+
+// API để lấy tin nhắn trong phòng chat
+router.get("/messages/:roomId", chatController.getMessages);
+
+// Route để gửi tin nhắn
+router.post("/sendMessage", chatController.sendMessage);
+
+// Route để gửi tin nhắn từ admin
+router.post("/sendAdminMessage", chatController.sendAdminMessage);
+
+// Route để gửi tin nhắn từ client
+router.post("/sendClientMessage", chatController.sendClientMessage);
 
 module.exports = router;

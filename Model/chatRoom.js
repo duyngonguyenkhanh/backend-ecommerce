@@ -8,7 +8,7 @@ const messageSchema = new mongoose.Schema({
 });
 
 const chatRoomSchema = new mongoose.Schema({
-  userId: { type: String, required: true }, // ID của người dùng (khách hàng)
+  users: [{ type: String, required: true }], // ID của người dùng (khách hàng và admin)
   messages: [messageSchema], // Mảng các tin nhắn trong room
 });
 
