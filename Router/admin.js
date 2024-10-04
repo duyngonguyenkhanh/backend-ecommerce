@@ -15,6 +15,8 @@ router.delete('/products/:id',isAdmin , adminController.deleteProduct)
 
 router.post('/updateproduct/:id',isAdmin , adminController.updateProduct)
 
+router.post('/addproduct',isAdmin , adminController.addProduct)
+
     
 
 module.exports = router;

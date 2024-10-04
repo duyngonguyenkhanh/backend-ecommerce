@@ -100,12 +100,10 @@ exports.getAllOrder = async (req, res) => {
       order: order,
     });
   } catch (error) {
-    return res
-      .status(500)
-      .json({
-        message: "Lấy danh sách đơn hàng thất bại",
-        error: error.message,
-      });
+    return res.status(500).json({
+      message: "Lấy danh sách đơn hàng thất bại",
+      error: error.message,
+    });
   }
 };
 
@@ -127,20 +125,22 @@ exports.postLogout = (req, res, next) => {
 
 //Hàm xóa 1 sản phẩm theo id
 exports.deleteProduct = async (req, res) => {
-  const productId = req.params.id; // Sửa từ req.parmas thành req.params  
+  const productId = req.params.id; // Sửa từ req.parmas thành req.params
 
   try {
     //Kiểm tra xem sản phẩm có tồn tại hay không?
     const product = await Product.findById(productId);
     if (!product) {
-      return res.status(404).json({message: "sản phẩm không tồn tại"})
+      return res.status(404).json({ message: "sản phẩm không tồn tại" });
     }
 
     //Thực hiện việc xóa sản phẩm
-     await Product.findByIdAndDelete(productId);
-     return res.status(200).json({message: "Xóa sản phẩm thành công"})
+    await Product.findByIdAndDelete(productId);
+    return res.status(200).json({ message: "Xóa sản phẩm thành công" });
   } catch (error) {
-    return res.status(500).json({ message: "Xóa sản phẩm thất bại", error: error.message })
+    return res
+      .status(500)
+      .json({ message: "Xóa sản phẩm thất bại", error: error.message });
   }
 };
 
@@ -151,17 +151,70 @@ exports.updateProduct = async (req, res) => {
 
   try {
     // Sử dụng findByIdAndUpdate để cập nhật sản phẩm
-    const updatedProduct = await Product.findByIdAndUpdate(productId, updateProduct, { new: true });
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      updateProduct,
+      { new: true }
+    );
 
     // Kiểm tra xem sản phẩm có tồn tại không
     if (!updatedProduct) {
       return res.status(404).json({ message: "Sản phẩm không tồn tại" });
     }
 
-    return res.status(200).json({ message: "Cập nhật sản phẩm thành công", product: updatedProduct });
+    return res
+      .status(200)
+      .json({
+        message: "Cập nhật sản phẩm thành công",
+        product: updatedProduct,
+      });
   } catch (error) {
     return res.status(500).json({
       message: "Cập nhật sản phẩm thất bại",
+      error: error.message,
+    });
+  }
+};
+
+//Hàm thêm 1 sản phẩm mới
+exports.addProduct = async (req, res) => {
+  const {
+    category,
+    img1,
+    img2,
+    img3,
+    img4,
+    long_desc,
+    name,
+    price,
+    short_desc,
+  } = req.body;
+  try {
+    // Tạo một đối tượng sản phẩm mới
+    const newProduct = new Product({
+      category,
+      img1,
+      img2,
+      img3,
+      img4,
+      long_desc,
+      name,
+      price,
+      short_desc,
+    });
+
+    // Lưu sản phẩm vào cơ sở dữ liệu
+    await newProduct.save();
+
+    // Trả về phản hồi khi thêm sản phẩm thành công
+    return res.status(201).json({
+      message: "Thêm sản phẩm thành công",
+      product: newProduct,
+    });
+  } catch (error) {
+    // Trả về phản hồi khi có lỗi
+    return res.status(500).json({
+      message: "Thêm sản phẩm thất bại",
       error: error.message,
     });
   }
