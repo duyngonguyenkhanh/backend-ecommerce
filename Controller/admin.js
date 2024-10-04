@@ -50,7 +50,7 @@ exports.postLoginAdmin = [
     try {
       const user = await User.findOne({ email: email });
 
-      if (user.role !== "admin") {
+      if (user.role !== "admin" && user.role !== "advisor") {
         return res
           .status(500)
           .json({ message: "Only admin accounts are authorized" });
