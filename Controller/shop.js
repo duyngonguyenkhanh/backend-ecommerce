@@ -3,7 +3,7 @@ const Product = require("../Model/product");
 const User = require("../Model/user");
 
 const Order = require("../Model/order");
-require('dotenv').config();
+require("dotenv").config();
 const fs = require("fs");
 const path = require("path");
 const PDFDocument = require("pdfkit");
@@ -44,7 +44,7 @@ exports.getAllProducts = async (req, res, next) => {
   }
 };
 
-//Controller thực hiện việc thêm cart
+// Controller thực hiện việc thêm cart
 exports.addToCart = async (req, res, next) => {
   const userId = req.user._id; // Giả sử bạn lưu ID người dùng trong req.user sau khi xác thực
   const { productId, quantity } = req.body; // Nhận ID sản phẩm và số lượng từ body yêu cầu
@@ -62,10 +62,21 @@ exports.addToCart = async (req, res, next) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    // Kiểm tra số lượng sản phẩm có sẵn
+    if (product.quantity < quantity) {
+      return res
+        .status(400)
+        .json({ message: "Not enough product quantity available" });
+    }
+
     // Thêm sản phẩm vào giỏ hàng với số lượng
     await user.addToCart(product, quantity);
 
-    res.status(200).json({ message: "Product added to cart" });
+    // Trừ số lượng đã đặt ra khỏi kho
+    product.quantity -= quantity;
+    await product.save();
+
+    res.status(200).json({ message: "Product added to cart", product });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -105,8 +116,19 @@ exports.increaseQuantity = async (req, res, next) => {
   try {
     const user = await User.findById(userId);
 
+    const product = await Product.findById(productId);
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    if (product && product.quantity > 0) {
+      product.quantity -= 1;
+      await product.save();
+    } else {
+      return res
+        .status(400)
+        .json({ message: "Not enough product quantity available" });
     }
 
     // Tăng số lượng sản phẩm trong giỏ hàng
@@ -127,8 +149,15 @@ exports.decreaseQuantity = async (req, res, next) => {
   try {
     const user = await User.findById(userId);
 
+    const product = await Product.findById(productId);
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    if (product) {
+      product.quantity += 1;
+      await product.save();
     }
 
     // Giảm số lượng sản phẩm trong giỏ hàng
@@ -205,7 +234,9 @@ exports.createOrder = async (req, res) => {
     .map(
       (item) => `
      <div style="display: flex; border: 2px solid black; width: 700px">
-        <p style="width: 20%; border-right: 2px solid black; margin-top: 0; margin-bottom: 0;">${item.name}</p>
+        <p style="width: 20%; border-right: 2px solid black; margin-top: 0; margin-bottom: 0;">${
+          item.name
+        }</p>
         <div
           style="
             width: 20%;
@@ -229,9 +260,11 @@ exports.createOrder = async (req, res) => {
           />
         </div>
         <p style="width: 20%; text-align: center ; border-right: 2px solid black; margin-top: 0; margin-bottom: 0;">
-          ${(item.price).toLocaleString("vi-VN")} VND
+          ${item.price.toLocaleString("vi-VN")} VND
         </p>
-        <p style="width: 20%; text-align: center; border-right: 2px solid black; margin-top: 0; margin-bottom: 0;">${item.quantity}</p>
+        <p style="width: 20%; text-align: center; border-right: 2px solid black; margin-top: 0; margin-bottom: 0;">${
+          item.quantity
+        }</p>
         <p style="width: 20%; text-align: center">
           ${Number(item.price * item.quantity).toLocaleString("vi-VN")} VND
         </p>

@@ -11,7 +11,8 @@ const productSchema = new Schema({
   long_desc: { type: String, required: true },
   name: { type: String, required: true },
   price: { type: Number, required: true },
-  short_desc: { type: String, required: true }
+  short_desc: { type: String, required: true },
+  quantity: { type: Number, required: true, default: 0 } // Thêm trường số lượng
 }, { timestamps: true });
 
 // Tạo model Product
